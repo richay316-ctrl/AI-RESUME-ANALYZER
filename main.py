@@ -3,90 +3,360 @@ import streamlit as st
 from pdf_extractor import extract_text_from_pdf
 from similarity import calculate_similarity
 from keyword_extractor import (
-    get_missing_keywords,
     extract_skills,
+    get_missing_keywords
 )
+
+from charts import pie_chart, gauge_chart
+import re  # Contact aur Email parse karne ke liye regular expressions
 from charts import pie_chart, gauge_chart
 
+import re
+import streamlit as st
 
-# ---------------------------------------------------
+# -----------------------------
 # PAGE CONFIG
-# ---------------------------------------------------
-
+# -----------------------------
 st.set_page_config(
     page_title="AI Resume Analyzer",
-    page_icon="📄",
+    page_icon="🤖",
     layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
+# -----------------------------
+# HERO SECTION
+# -----------------------------
+left, right = st.columns([1.2, 1])
+
+with left:
+
+    st.markdown("""
+    <h1 style="
+        font-size:60px;
+        font-weight:800;
+        color:#1E1B4B;
+        margin-bottom:5px;">
+        AI Resume Analyzer
+    </h1>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <p style="
+        font-size:18px;
+        color:#6B7280;
+        line-height:1.7;">
+        Upload your resume and compare it with the job description.
+        Get ATS Score, Missing Keywords, Skills Detection,
+        and AI-powered Recommendations instantly.
+    </p>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.button("🚀 Analyze Resume")
+
+    with c2:
+        st.button("📄 Upload Resume")
+
+with right:
+    st.image(
+        "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900",
+        use_container_width=True
+    )
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+
+# MySQL Database Functions
+from database import (
+    create_table,
+    save_analysis
+)
+
+
+# Create Database Table
+create_table()
 # ---------------------------------------------------
-# CUSTOM CSS
+# LOGIN & SIGNUP SYSTEM
 # ---------------------------------------------------
 
-st.markdown("""
+import streamlit as st
+
+# -----------------------------
+# Demo Users
+# -----------------------------
+if "users" not in st.session_state:
+    st.session_state.users = {
+        "admin": "12345",
+        "user": "password"
+    }
+
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+
+def login_page():
+
+    st.markdown("""
 <style>
+                /* Login form heading */
+div[data-testid="stForm"] h3{
+    color:#111827 !important;
+}
 
-/* Buttons */
-
-.stButton>button{
-    width:100%;
-    background:#2563eb;
-    color:white;
-    border:none;
-    border-radius:10px;
-    padding:12px;
-    font-size:16px;
+/* Labels */
+div[data-testid="stForm"] label{
+    color:#111827 !important;
     font-weight:600;
 }
 
-.stButton>button:hover{
-    background:#1d4ed8;
+/* Input text */
+div[data-testid="stForm"] input{
+    color:#111827 !important;
 }
 
-/* Metric Cards */
-
-div[data-testid="stMetric"]{
-    border:1px solid #d1d5db;
-    border-radius:12px;
-    padding:15px;
+/* Placeholder */
+div[data-testid="stForm"] input::placeholder{
+    color:#6b7280 !important;
 }
 
-/* File uploader */
+.main{
+    background:#f5f7fb;
+}
 
-div[data-testid="stFileUploader"]{
-    border:2px dashed #cbd5e1;
-    border-radius:12px;
+/* Header Card */
+.header-card{
+    max-width:500px;
+    margin:auto;
+    margin-top:30px;
+    padding:30px;
+    background:white;
+    border-radius:20px;
+    text-align:center;
+    box-shadow:0 8px 25px rgba(0,0,0,.15);
+}
+
+/* Force text color */
+.header-card h2{
+    color:#111827 !important;
+    font-size:38px;
+    font-weight:700;
+}
+
+.header-card p{
+    color:#6B7280 !important;
+    font-size:16px;
+}
+
+.header-card h4{
+    color:#2563eb !important;
+}
+
+/* Login Form */
+div[data-testid="stForm"]{
+    max-width:450px;
+    margin:auto;
+    padding:30px;
+    border-radius:20px;
+    background:white;
+    box-shadow:0 8px 25px rgba(0,0,0,.18);
+    margin-top:20px;
+}
+
+/* Buttons */
+.stButton>button{
+    width:100%;
+    border-radius:10px;
+    font-weight:bold;
+    height:48px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
+    # ---------------- HOME ----------------
+
+    if st.session_state.page == "home":
+
+        col1, col2, col3 = st.columns([1,1,1])
+
+        with col2:
+
+            if st.button("🔑 Login", use_container_width=True):
+                st.session_state.page = "login"
+                st.rerun()
+
+            st.write("")
+
+            if st.button("📝 Sign Up", use_container_width=True):
+                st.session_state.page = "signup"
+                st.rerun()
+
+    # ---------------- LOGIN ----------------
+
+    elif st.session_state.page == "login":
+
+        with st.form("login_form"):
+
+            st.subheader("🔐 Login Account")
+
+            username = st.text_input(
+                "Username",
+                placeholder="Enter username"
+            )
+
+            password = st.text_input(
+                "Password",
+                type="password",
+                placeholder="Enter password"
+            )
+
+            login = st.form_submit_button("🚀 Login Now")
+
+            if login:
+
+                if (
+                    username in st.session_state.users
+                    and
+                    st.session_state.users[username] == password
+                ):
+
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+
+                    st.success("Login Successful")
+                    st.rerun()
+
+                else:
+                    st.error("Invalid Username or Password")
+
+        if st.button("⬅ Back"):
+            st.session_state.page = "home"
+            st.rerun()
+
+    # ---------------- SIGNUP ----------------
+
+    elif st.session_state.page == "signup":
+
+        with st.form("signup_form"):
+
+            st.subheader("📝 Create Account")
+
+            new_username = st.text_input("Create Username")
+
+            new_password = st.text_input(
+                "Create Password",
+                type="password"
+            )
+
+            confirm_password = st.text_input(
+                "Confirm Password",
+                type="password"
+            )
+
+            signup = st.form_submit_button("Create Account")
+
+            if signup:
+
+                if new_username == "" or new_password == "":
+                    st.warning("Please fill all fields")
+
+                elif new_username in st.session_state.users:
+                    st.error("Username already exists")
+
+                elif new_password != confirm_password:
+                    st.error("Passwords do not match")
+
+                else:
+
+                    st.session_state.users[new_username] = new_password
+
+                    st.success("Account Created Successfully")
+
+                    st.session_state.page = "login"
+
+                    st.rerun()
+
+        if st.button("⬅ Back"):
+            st.session_state.page = "home"
+            st.rerun()
+
+
+# -----------------------------
+# LOGIN CHECK
+# -----------------------------
+
+if not st.session_state.logged_in:
+    login_page()
+    st.stop()
 # ---------------------------------------------------
-# SIDEBAR
+# HELPER FUNCTIONS FOR EXTRACTION
+# ---------------------------------------------------
+
+def extract_email(text):
+    match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+    return match.group(0) if match else "Not Detected"
+
+def extract_contact(text):
+    match = re.search(r'\b\d{10}\b|\+?\d{1,3}[-.\s]?\d{3,4}[-.\s]?\d{3,4}', text)
+    return match.group(0) if match else "Not Detected"
+
+
+
+# ---------------------------------------------------
+# INITIALIZE STATE VARIABLES
+# ---------------------------------------------------
+if 'analyzed_data' not in st.session_state:
+    st.session_state['analyzed_data'] = None
+
+# ---------------------------------------------------
+# SIDEBAR UI & NAVIGATION
 # ---------------------------------------------------
 
 with st.sidebar:
-
-    st.title("📄 AI Resume Analyzer")
-
-    st.markdown("---")
-
-    st.subheader("Features")
-
-    st.write("✅ Resume Match Score")
-    st.write("✅ Missing Keywords")
-    st.write("✅ Skills Detection")
-    st.write("✅ ATS Optimization")
-    st.write("✅ Resume Recommendation")
-
-    st.markdown("---")
-
-    st.subheader("How to Use")
-
-    st.write("1. Upload Resume")
-    st.write("2. Paste Job Description")
-    st.write("3. Click Analyze Resume")
-    st.write("4. View Results")
+    # Profile metadata dynamic showcase card
+    if st.session_state['analyzed_data'] is not None:
+        data = st.session_state['analyzed_data']
+        st.markdown(f"""
+        <div class="sidebar-profile">
+            <h4 style='margin:0; font-size:16px;'>👤 Profile</h4>
+            <p style='margin:8px 0 2px 0; font-size:13px;'><b>Email:</b><br>{data['email']}</p>
+            <p style='margin:0; font-size:13px;'><b>Contact:</b> {data['contact']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="sidebar-profile">
+            <h4 style='margin:0; font-size:16px;'>🚀 Workspace Active</h4>
+            <p style='margin:5px 0 0 0; font-size:13px;'>
+            Upload your resume document to unlock instant candidate meta metrics.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.subheader("✨ Select Feature")
+    
+    feature_choice = st.radio(
+        "Choose what you want to view:",
+        [
+         "📊 Full Dashboard",
+        "🎯 Resume Match Score",
+        "📞 Contact Details",
+        "📧 Email Extraction",
+        "🔍 Missing Keywords",
+        "🛠 Skills Detection",
+        "📝 Recommendation & Rating",
+        "📥 Download Report"
+        ],
+        label_visibility="collapsed"  # Clean look ke liye label hide kiya hai
+    )
 
 # ---------------------------------------------------
 # MAIN PAGE
@@ -97,8 +367,7 @@ st.title("📄 AI Resume Match Analyzer")
 st.markdown(
     """
     <p style="color:#2563eb; font-size:18px;">
-    Upload your resume and compare it with a job description 
-    to measure ATS compatibility.
+    Upload your resume and compare it with a job description to measure ATS compatibility.
     </p>
     """,
     unsafe_allow_html=True
@@ -113,10 +382,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-uploaded_file = st.file_uploader(
-    "",
-    type=["pdf"]
-)
+uploaded_file = st.file_uploader("", type=["pdf"])
 
 st.markdown(
     """
@@ -129,20 +395,16 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-job_description = st.text_area(
-    "",
-    height=220,
-    placeholder="Paste the job description here..."
-)
+job_description = st.text_area("", height=220, placeholder="Paste the job description here...")
 
 # Analyze Button
 analyze = st.button("Analyze Resume")
 
 # ---------------------------------------------------
-# ANALYSIS
+# PROCESSING METRICS
 # ---------------------------------------------------
 
-if analyze:
+if analyze or st.session_state['analyzed_data'] is not None:
 
     if uploaded_file is None:
         st.warning("Please upload your resume.")
@@ -152,18 +414,114 @@ if analyze:
         st.warning("Please paste the job description.")
         st.stop()
 
-    with st.spinner("Analyzing Resume..."):
 
-        resume_text = extract_text_from_pdf(uploaded_file)
+    if analyze or st.session_state['analyzed_data'] is None:
 
-        score, _, _ = calculate_similarity(
-            resume_text,
-            job_description,
-        )
+        with st.spinner("Analyzing Resume..."):
 
-    st.success("Analysis Completed Successfully")
+            resume_text = extract_text_from_pdf(uploaded_file)
 
-    st.markdown("---")
+            score, _, _ = calculate_similarity(
+                resume_text,
+                job_description
+            )
+
+            missing = get_missing_keywords(
+                resume_text,
+                job_description
+            )
+
+            skills = extract_skills(
+                resume_text
+            )
+
+            email_id = extract_email(resume_text)
+
+            contact_num = extract_contact(resume_text)
+
+
+            st.session_state['analyzed_data'] = {
+
+                'score': score,
+                'missing': missing,
+                'skills': skills,
+                'email': email_id,
+                'contact': contact_num,
+                'resume_text': resume_text
+
+            }
+
+
+            # SAVE DATA INTO MYSQL
+            save_analysis(
+                uploaded_file.name,
+                job_description,
+                score,
+                skills,
+                missing
+            )
+
+
+            st.success("Resume Analysis Saved in Database")
+
+            st.rerun()
+
+
+
+
+# -------------------------------
+# After rerun display data
+# -------------------------------
+
+if st.session_state['analyzed_data'] is None:
+    st.stop()
+
+
+data = st.session_state['analyzed_data']
+
+score = data['score']
+missing = data['missing']
+skills = data['skills']
+email = data['email']
+contact = data['contact']
+
+
+# Resume Rating
+
+if score >= 90:
+    rating = "⭐⭐⭐⭐⭐ Outstanding"
+
+elif score >= 80:
+    rating = "⭐⭐⭐⭐⭐ Excellent"
+
+elif score >= 70:
+    rating = "⭐⭐⭐⭐ Very Good"
+
+elif score >= 60:
+    rating = "⭐⭐⭐ Good"
+
+elif score >= 40:
+    rating = "⭐⭐ Fair"
+
+else:
+    rating = "⭐ Needs Improvement"
+
+
+
+st.markdown("---")
+
+st.info(
+    f"Showing Results for: **{feature_choice}**"
+)
+
+
+
+# 1. MATCH SCORE & CHARTS
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "🎯 Resume Match Score"
+]:
 
     col1, col2 = st.columns([1,1])
 
@@ -176,17 +534,63 @@ if analyze:
 
         pie_chart(score)
 
+
     with col2:
 
         gauge_chart(score)
 
+
     st.markdown("---")
 
-    st.subheader("Missing Keywords")
 
-    missing = get_missing_keywords(
-        resume_text,
-        job_description,
+
+# 2. CONTACT DETAILS
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "📞 Contact Details"
+]:
+
+    st.subheader(
+        "📞 Extracted Contact Information"
+    )
+
+    st.info(
+        f"**Phone / Contact Identifier:** {contact}"
+    )
+
+    st.markdown("---")
+
+
+
+# 3. EMAIL EXTRACTION
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "📧 Email Extraction"
+]:
+
+    st.subheader(
+        "📧 Extracted Email Address"
+    )
+
+    st.success(
+        f"**Primary Email Address:** {email}"
+    )
+
+    st.markdown("---")
+
+
+
+# 4. MISSING KEYWORDS
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "🔍 Missing Keywords"
+]:
+
+    st.subheader(
+        "Missing Keywords"
     )
 
     if missing:
@@ -199,13 +603,25 @@ if analyze:
 
     else:
 
-        st.success("No important keywords are missing.")
+        st.success(
+            "No important keywords are missing."
+        )
 
     st.markdown("---")
 
-    st.subheader("Skills Found")
 
-    skills = extract_skills(resume_text)
+
+# 5. SKILLS
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "🛠 Skills Detection"
+]:
+
+    st.subheader(
+        "Skills Found"
+    )
+
 
     if skills:
 
@@ -217,148 +633,119 @@ if analyze:
 
     else:
 
-        st.info("No skills detected.")
+        st.info(
+            "No skills detected."
+        )
+
 
     st.markdown("---")
+    
 
-    st.subheader("Recommendation")
+
+
+# 6. RECOMMENDATION
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "📝 Recommendation & Rating"
+]:
+
+
+    st.subheader(
+        "Recommendation"
+    )
+
 
     if score >= 80:
 
-        st.markdown(
-            """
-            <div style="
-            background-color:#dcfce7;
-            border-left:6px solid #16a34a;
-            padding:20px;
-            border-radius:10px;
-            color:#166534;">
-            
-            <h3>🟢 Excellent Match</h3>
-            <p>Your resume is highly aligned with the job description.</p>
-            
-            ✔ Strong ATS Compatibility<br>
-            ✔ Good Skill Match<br>
-            ✔ Ready to Apply
-            
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.success(
+            "🟢 Excellent Match\n\nYour resume is highly aligned with the job description."
         )
 
 
     elif score >= 70:
 
-        st.markdown(
-            """
-            <div style="
-            background-color:#fef9c3;
-            border-left:6px solid #eab308;
-            padding:20px;
-            border-radius:10px;
-            color:#854d0e;">
-            
-            <h3>🟡 Good Match</h3>
-            <p>Your resume matches well but needs some improvements.</p>
-            
-            ✔ Add missing keywords<br>
-            ✔ Improve project descriptions<br>
-            ✔ Highlight technical skills
-            
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.warning(
+            "🟡 Good Match\n\nImprove keywords and project descriptions."
         )
 
 
     else:
 
-        st.markdown(
-            """
-            <div style="
-            background-color:#fee2e2;
-            border-left:6px solid #dc2626;
-            padding:20px;
-            border-radius:10px;
-            color:#991b1b;">
-            
-            <h3>🔴 Needs Improvement</h3>
-            <p>Your resume needs more optimization for ATS compatibility.</p>
-            
-            ✔ Add required skills<br>
-            ✔ Include job-specific keywords<br>
-            ✔ Customize your resume
-            
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.error(
+            "🔴 Needs Improvement\n\nCustomize your resume according to job requirements."
         )
-            # ------------------------------------------------
-    # Resume Rating
-    # ------------------------------------------------
 
-    st.markdown("---")
-    st.subheader("⭐ Resume Rating")
 
-    if score >= 90:
-        rating = "⭐⭐⭐⭐⭐ Outstanding"
+
+    st.subheader(
+        "⭐ Resume Rating"
+    )
+
+
+    if score >= 80:
+
         st.success(rating)
-
-    elif score >= 80:
-        rating = "⭐⭐⭐⭐⭐ Excellent"
-        st.success(rating)
-
-    elif score >= 70:
-        rating = "⭐⭐⭐⭐ Very Good"
-        st.info(rating)
 
     elif score >= 60:
-        rating = "⭐⭐⭐ Good"
-        st.warning(rating)
 
-    elif score >= 40:
-        rating = "⭐⭐ Fair"
-        st.warning(rating)
+        st.info(rating)
 
     else:
-        rating = "⭐ Needs Improvement"
-        st.error(rating)
 
-    # ------------------------------------------------
-    # Download Report
-    # ------------------------------------------------
+        st.warning(rating)
+
+
 
     st.markdown("---")
-    st.subheader("📥 Download Analysis Report")
+
+
+
+# 7. DOWNLOAD REPORT
+
+if feature_choice in [
+    "📊 Full Dashboard",
+    "📥 Download Report"
+]:
+
+    st.subheader(
+        "📥 Download Analysis Report"
+    )
+
 
     report = f"""
 ==================================================
-            AI RESUME ANALYSIS REPORT
+          AI RESUME ANALYSIS REPORT
 ==================================================
 
 Resume Match Score : {score}%
 
-Resume Rating : {rating}
+Resume Rating      : {rating}
+
+Email Detected     : {email}
+
+Contact Info       : {contact}
+
 
 --------------------------------------------------
-
 Detected Skills
 
 {', '.join(skills) if skills else 'No skills detected'}
 
---------------------------------------------------
 
+--------------------------------------------------
 Missing Keywords
 
 {', '.join(missing) if missing else 'No missing keywords'}
 
+
 --------------------------------------------------
-
 Recommendation
-
 """
 
+
     if score >= 80:
+
         report += """
 Excellent Match
 
@@ -366,21 +753,24 @@ Your resume is highly compatible with the job description.
 You are ready to apply.
 """
 
+
     elif score >= 60:
+
         report += """
 Good Match
 
-Improve your resume by adding missing keywords,
-technical skills and relevant projects.
+Improve your resume by adding missing keywords and skills.
 """
 
+
     else:
+
         report += """
 Needs Improvement
 
-Customize your resume according to the job description,
-add relevant skills and improve project descriptions.
+Customize your resume according to the job description.
 """
+
 
     report += """
 
@@ -389,13 +779,68 @@ Generated by AI Resume Analyzer
 ==================================================
 """
 
+
     st.download_button(
+
         label="📄 Download Report",
+
         data=report,
+
         file_name="Resume_Analysis_Report.txt",
-        mime="text/plain",
+
+        mime="text/plain"
+
     )
 
-st.markdown("---")
-st.caption("© 2026 AI Resume Analyzer | Built with Streamlit")
 
+
+st.markdown("---")
+
+st.caption(
+    "© 2026 AI Resume Analyzer | Built with Streamlit"
+)
+
+st.markdown("---")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+    <div style="font-size:14px;">
+
+    <h3 style="font-size:18px;">🤖 About AI Resume Analyzer</h3>
+
+    AI Resume Analyzer is an intelligent tool that analyzes your resume 
+    with job descriptions and calculates ATS compatibility, missing keywords, 
+    and required skills to improve your career opportunities.
+
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with col2:
+    st.markdown("""
+    <div style="text-align:center; font-size:14px;">
+
+    <h3 style="font-size:18px;">🌐 Website</h3>
+
+    www.airesumeanalyzer.com
+
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with col3:
+    st.markdown("""
+    <div style="font-size:14px;">
+
+    <h3 style="font-size:18px;">📞 Contact Details</h3>
+
+    📧 Email:<br>
+    support@airesumeanalyzer.com<br>
+
+    📱 Phone:<br>
+    +91 9876543210
+
+    </div>
+    """, unsafe_allow_html=True)
