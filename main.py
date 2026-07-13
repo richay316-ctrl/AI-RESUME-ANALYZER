@@ -4,9 +4,8 @@ from pdf_extractor import extract_text_from_pdf
 from similarity import calculate_similarity
 from keyword_extractor import (
     extract_skills,
-    get_missing_keywords
+    get_missing_keywords_with_reason
 )
-
 from charts import pie_chart, gauge_chart
 import re  # Contact aur Email parse karne ke liye regular expressions
 from charts import pie_chart, gauge_chart
@@ -426,14 +425,16 @@ if analyze or st.session_state['analyzed_data'] is not None:
                 job_description
             )
 
-            missing = get_missing_keywords(
-                resume_text,
-                job_description
+            missing = get_missing_keywords_with_reason(
+
+             
+             resume_text,
+            job_description
             )
 
             skills = extract_skills(
-                resume_text
-            )
+    resume_text
+)
 
             email_id = extract_email(resume_text)
 
@@ -450,16 +451,17 @@ if analyze or st.session_state['analyzed_data'] is not None:
                 'resume_text': resume_text
 
             }
-
+            
+            missing_keywords = [item["keyword"] for item in missing]
 
             # SAVE DATA INTO MYSQL
             save_analysis(
-                uploaded_file.name,
-                job_description,
-                score,
-                skills,
-                missing
-            )
+    uploaded_file.name,
+    job_description,
+    score,
+    skills,
+    [item["keyword"] for item in missing]
+)
 
 
             st.success("Resume Analysis Saved in Database")
@@ -581,7 +583,6 @@ if feature_choice in [
     st.markdown("---")
 
 
-
 # 4. MISSING KEYWORDS
 
 if feature_choice in [
@@ -589,26 +590,34 @@ if feature_choice in [
     "🔍 Missing Keywords"
 ]:
 
-    st.subheader(
-        "Missing Keywords"
-    )
+    st.subheader("🔍 Missing Keywords Analysis")
 
     if missing:
 
-        cols = st.columns(4)
+        for item in missing:
 
-        for i, keyword in enumerate(missing):
+            with st.expander(f"❌ {item['keyword']}"):
 
-            cols[i % 4].success(keyword)
+                st.markdown("### 🔴 Reason")
+                st.error(item["reason"])
+
+                st.markdown("### ⭐ Priority")
+                st.write(item["priority"])
+
+                st.markdown("### 📄 Found in Job Description")
+                st.code(item["jd_line"])
+
+                st.markdown("### 📍 Add In Resume")
+                st.info(item["section"])
+
+                st.markdown("### 💡 Suggestion")
+                st.success(item["suggestion"])
 
     else:
 
-        st.success(
-            "No important keywords are missing."
-        )
+        st.success("✅ No important keywords are missing.")
 
     st.markdown("---")
-
 
 
 # 5. SKILLS
@@ -736,7 +745,10 @@ Detected Skills
 --------------------------------------------------
 Missing Keywords
 
-{', '.join(missing) if missing else 'No missing keywords'}
+
+
+
+{', '.join([item['keyword'] for item in missing]) if missing else 'No missing keywords'}
 
 
 --------------------------------------------------
