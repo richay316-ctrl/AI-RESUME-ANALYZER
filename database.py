@@ -1,7 +1,9 @@
 import mysql.connector
 
 
+# ----------------------------------------
 # MySQL Connection
+# ----------------------------------------
 
 def get_connection():
 
@@ -15,19 +17,18 @@ def get_connection():
     return conn
 
 
-
-# Table create
+# ----------------------------------------
+# Create Table
+# ----------------------------------------
 
 def create_table():
 
     conn = get_connection()
-
     cursor = conn.cursor()
 
-
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS resume_analysis
-    (
+    CREATE TABLE IF NOT EXISTS resume_analysis (
+
         id INT AUTO_INCREMENT PRIMARY KEY,
 
         resume_name VARCHAR(255),
@@ -38,21 +39,21 @@ def create_table():
 
         skills TEXT,
 
-        missing_keywords TEXT
+        missing_keywords TEXT,
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
     )
     """)
 
-
     conn.commit()
-
     cursor.close()
     conn.close()
 
 
-
-# Save Analysis Data
+# ----------------------------------------
+# Save Analysis
+# ----------------------------------------
 
 def save_analysis(
         resume_name,
@@ -63,9 +64,7 @@ def save_analysis(
 ):
 
     conn = get_connection()
-
     cursor = conn.cursor()
-
 
     query = """
     INSERT INTO resume_analysis
@@ -79,7 +78,6 @@ def save_analysis(
 
     VALUES (%s,%s,%s,%s,%s)
     """
-
 
     values = (
 
@@ -95,12 +93,7 @@ def save_analysis(
 
     )
 
-
-    cursor.execute(
-        query,
-        values
-    )
-
+    cursor.execute(query, values)
 
     conn.commit()
 
@@ -108,26 +101,30 @@ def save_analysis(
     conn.close()
 
 
-
-# Fetch Data
+# ----------------------------------------
+# Fetch Analysis
+# ----------------------------------------
 
 def get_analysis():
 
     conn = get_connection()
-
     cursor = conn.cursor()
 
-
-    cursor.execute(
-        "SELECT * FROM resume_analysis"
-    )
-
+    cursor.execute("""
+    SELECT
+        id,
+        resume_name,
+        match_score,
+        skills,
+        missing_keywords,
+        created_at
+    FROM resume_analysis
+    ORDER BY id DESC
+    """)
 
     data = cursor.fetchall()
 
-
     cursor.close()
     conn.close()
-
 
     return data
